@@ -1,0 +1,3 @@
+[submodule "hw0"]
+	path = hw0
+	url = git@github.com:wplf/hw0.git
