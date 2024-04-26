@@ -91,7 +91,8 @@ def softmax_loss(Z, y):
     # return np.average(loss)
     return loss / len(Z)
     ### END YOUR CODE
-
+    # batch, N
+    # batch, 1
 def softmax(X):
     X_exp = np.exp(X)
     # X_exp -= X_exp.max(axis=1, keepdims=True)
@@ -175,8 +176,6 @@ def nn_epoch(X, y, W1, W2, lr = 0.1, batch=100):
         
         W1 -= lr * w1_grad
         W2 -= lr * W2_grad
-
-        
     # pass
     ### END YOUR CODE
 
