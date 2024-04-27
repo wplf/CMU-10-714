@@ -168,28 +168,29 @@ class BatchNorm1d(Module):
     def forward(self, x: Tensor) -> Tensor:
         w = self.weight.broadcast_to(x.shape)
         b = self.bias.broadcast_to(x.shape)
-
+        
         if self.training:
             x_mean = x.sum(0) / x.shape[0]
-            expanded_mean = x_mean.broadcast_to(x.shape)
-            x_var = ((x-expanded_mean) ** 2).sum(0) / x.shape[0]
-            expanded_var = x_var.broadcast_to(x.shape)
-            
-            self.running_mean = self.running_mean * (1-self.momentum) + x_mean * self.momentum
-            self.running_var = self.running_var * (1 - self.momentum)+ x_var *  self.momentum
+            x_var = ((x-x_mean.broadcast_to(x.shape)) ** 2).sum(0) / x.shape[0]
+            norm = (x - x_mean.broadcast_to(x.shape)) / (x_var.broadcast_to(x.shape) + self.eps) ** 0.5
+            self.running_mean = self.running_mean * (1 - self.momentum) + x_mean.data * self.momentum
+            self.running_var = self.running_var * (1 - self.momentum) + x_var.data *  self.momentum
         else:
-            x_mean = self.running_mean
-            x_var = self.running_var
-            
-            expanded_mean = x_mean.broadcast_to(x.shape)
-            expanded_var = x_var.broadcast_to(x.shape)
-        
-        
-        x_std = ops.power_scalar(expanded_var + self.eps, 0.5)   
-        norm = (x - expanded_mean) / x_std
-        # breakpoint()
+            norm = (x - self.running_mean.broadcast_to(x.shape)) / (self.running_var.broadcast_to(x.shape) + self.eps) ** 0.5
         return w * norm + b
-
+    
+    # def forward(self, x: Tensor) -> Tensor:
+    #     ### BEGIN YOUR SOLUTION
+    #     if self.training:
+    #         batch_mean = x.sum((0,)) / x.shape[0]
+    #         batch_var = ((x - batch_mean.broadcast_to(x.shape))**2).sum((0,)) / x.shape[0]
+    #         self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * batch_mean.data
+    #         self.running_var = (1 - self.momentum) * self.running_var + self.momentum * batch_var.data
+    #         norm = (x - batch_mean.broadcast_to(x.shape)) / (batch_var.broadcast_to(x.shape) + self.eps)**0.5
+    #         return self.weight.broadcast_to(x.shape) * norm + self.bias.broadcast_to(x.shape)
+    #     else:
+    #         norm = (x - self.running_mean.broadcast_to(x.shape)) / (self.running_var.broadcast_to(x.shape) + self.eps)**0.5
+    #         return self.weight.broadcast_to(x.shape) * norm + self.bias.broadcast_to(x.shape)
 
 class LayerNorm1d(Module):
     def __init__(self, dim, eps=1e-5, device=None, dtype="float32"):

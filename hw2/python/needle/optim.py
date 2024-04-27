@@ -25,7 +25,17 @@ class SGD(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        
+        for param in self.params:
+            grad = param.grad.detach() + self.weight_decay * param.detach()
+            
+            self.u[param] = self.u.get(param, 0) * self.momentum \
+                    + grad * (1 - self.momentum)
+                    
+            param.cached_data -= self.lr * self.u[param].cached_data
+
+        # breakpoint()
+        # raise NotImplementedError()
         ### END YOUR SOLUTION
 
     def clip_grad_norm(self, max_norm=0.25):
@@ -54,11 +64,46 @@ class Adam(Optimizer):
         self.eps = eps
         self.weight_decay = weight_decay
         self.t = 0
-
-        self.m = {}
-        self.v = {}
+        from collections import defaultdict
+        self.m = defaultdict(float)
+        self.v = defaultdict(float)
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.t += 1
+        for param in self.params:
+            grad = param.grad.detach() + self.weight_decay * param.detach()
+            
+            self.m[param] = self.beta1 * self.m.get(param, 0) + (1 - self.beta1) * grad
+            self.v[param] = self.beta2 * self.v.get(param, 0) + (1 - self.beta2) * (grad ** 2)
+            # breakpoint()
+            m_t1_hat = self.m[param] / (1 - self.beta1 ** (self.t))
+            v_t1_hat = self.v[param] / (1 - self.beta2 ** (self.t))
+            
+            param.cached_data -= (self.lr * m_t1_hat / ((v_t1_hat ** 0.5) + self.eps)).cached_data
+            # locals().clear()
+        # self.v.clear()
+        # self.m.clear()
+        # self.v.clear()
+    # def step(self):
+    #     ### BEGIN YOUR SOLUTION
+    #     self.t += 1
+    #     for para in self.params:
+    #         m = self.m.get(para)
+    #         v = self.v.get(para)
+    #         grad = para.grad.detach() + self.weight_decay * para.detach()
+    #         m_new = (1 -
+    #                  self.beta1) * grad + self.beta1 * (0 if m == None else m)
+    #         v_new = (1 - self.beta2) * (grad**2) + self.beta2 * (0 if v == None
+    #                                                              else v)
+    #         self.m[para] = m_new
+    #         self.v[para] = v_new
+
+    #         m_new = (m_new / (1 - (self.beta1**self.t))).detach()
+    #         v_new = (v_new / (1 - (self.beta2**self.t))).detach()
+    #         para.cached_data -= self.lr * ((m_new / (
+    #             (v_new**0.5) + self.eps))).cached_data
+
+        ### END YOUR SOLUTION
+            # breakpoint()
         ### END YOUR SOLUTION

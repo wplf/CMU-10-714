@@ -363,7 +363,9 @@ def exp(a):
 class ReLU(TensorOp):
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        return a * (a>=0)
+        # breakpoint()
+        return array_api.maximum(a, 0)
+        # return a * (a>=0)
         # raise NotImplementedError()
         ### END YOUR SOLUTION
 
