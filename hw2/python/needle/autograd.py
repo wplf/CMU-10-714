@@ -1,7 +1,7 @@
 """Core data structures."""
 import needle
 from .backend_numpy import Device, cpu, all_devices
-from typing import List, Optional, NamedTuple, Tuple, Union
+from typing import List, Optional, NamedTuple, Tuple, Union, Dict
 from collections import namedtuple
 import numpy
 
@@ -13,10 +13,9 @@ TENSOR_COUNTER = 0
 
 # NOTE: we will import numpy as the array_api
 # as the backend for our computations, this line will change in later homeworks
-
 import numpy as array_api
-NDArray = numpy.ndarray
 
+NDArray = numpy.ndarray
 
 
 class Op:
@@ -379,9 +378,20 @@ def compute_gradient_of_variables(output_tensor, out_grad):
 
     # Traverse graph in reverse topological order given the output_node that we are taking gradient wrt.
     reverse_topo_order = list(reversed(find_topo_sort([output_tensor])))
+    # breakpoint()
 
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    for node in reverse_topo_order:
+        adjoint = node_to_output_grads_list[node]
+        v_i = sum_node_list(adjoint)
+        node.grad = v_i
+        if node.op is None:
+            continue
+        all_grads = node.op.gradient(v_i, node) 
+        for inp, g_ in zip(node.inputs, all_grads):
+            if node_to_output_grads_list.get(inp) is None:
+                node_to_output_grads_list[inp] = []
+            node_to_output_grads_list[inp].append(g_)
     ### END YOUR SOLUTION
 
 
@@ -394,14 +404,25 @@ def find_topo_sort(node_list: List[Value]) -> List[Value]:
     sort.
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    visited = set()
+    topo_order = []
+    for node in node_list:
+        if node not in visited:
+            topo_sort_dfs(node, visited, topo_order)    
+    return topo_order
+    # raise NotImplementedError()
     ### END YOUR SOLUTION
 
 
 def topo_sort_dfs(node, visited, topo_order):
     """Post-order DFS"""
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    visited.add(node)
+    for child in node.inputs:
+        if child not in visited:
+            topo_sort_dfs(child, visited, topo_order)
+    topo_order.append(node)
+    # raise NotImplementedError()
     ### END YOUR SOLUTION
 
 
