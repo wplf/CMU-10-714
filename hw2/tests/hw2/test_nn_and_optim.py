@@ -2241,6 +2241,7 @@ def test_mlp_residual_block_num_params_2():
 
 
 def test_mlp_residual_block_forward_1():
+    # breakpoint()
     np.testing.assert_allclose(
         residual_block_forward(15, 10, nn.LayerNorm1d, 0.5),
         np.array(
