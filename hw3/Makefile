@@ -5,7 +5,7 @@ all: lib
 
 lib:
 	@mkdir -p build
-	@cd build; cmake ..
+	@cd build; /home/wplf/bin/cmake-3.29.2-linux-x86_64/bin/cmake ..
 	@cd build; $(MAKE)
 
 format:

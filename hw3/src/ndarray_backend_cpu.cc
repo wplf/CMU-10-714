@@ -62,7 +62,23 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<int32_t> shap
    *  function will implement here, so we won't repeat this note.)
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  std::vector<size_t> indices(shape.size(), 0);
+  size_t cnt = 0;
+  while(true){
+    int position = offset;
+    for(size_t i = 0; i < shape.size(); i++){
+      position += indices[i] * strides[i];
+    }
+    out->ptr[cnt++] = a.ptr[position];
+    int dim = shape.size() - 1;
+    while(dim >= 0 && indices[dim] == shape[dim] - 1){
+      indices[dim] = 0;       
+      dim -= 1;
+    }
+    if(dim < 0) break;
+    indices[dim]++;
+  }
+  // assert(false && "Not Implemented");
   /// END SOLUTION
 }
 
@@ -79,7 +95,22 @@ void EwiseSetitem(const AlignedArray& a, AlignedArray* out, std::vector<int32_t>
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  std::vector<size_t> indices(shape.size(), 0);
+  size_t cnt = 0;
+  while(true){
+    int position = offset;
+    for(size_t i = 0; i < shape.size(); i++){
+      position += indices[i] * strides[i];
+    }
+    out->ptr[position] = a.ptr[cnt++];
+    int dim = shape.size() - 1;
+    while(dim >= 0 && indices[dim] == shape[dim] - 1){
+      indices[dim] = 0;       
+      dim -= 1;
+    }
+    if(dim < 0) break;
+    indices[dim]++;
+  }
   /// END SOLUTION
 }
 
@@ -98,9 +129,25 @@ void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vect
    *   strides: strides of the out array
    *   offset: offset of the out array
    */
-
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  std::vector<size_t> indices(shape.size(), 0);
+  int prod_shape = 1;
+  for(auto x: shape) prod_shape *= x;
+  assert(size == prod_shape);
+  while(true){
+    int position = offset;
+    for(size_t i = 0; i < shape.size(); i++){
+      position += indices[i] * strides[i];
+    }
+    out->ptr[position] = val;
+    int dim = shape.size() - 1;
+    while(dim >= 0 && indices[dim] == shape[dim] - 1){
+      indices[dim] = 0;       
+      dim -= 1;
+    }
+    if(dim < 0) break;
+    indices[dim]++;
+  }
   /// END SOLUTION
 }
 

@@ -1,6 +1,9 @@
 import numpy as np
 import pytest
 import mugrade
+import sys
+sys.path.append("./python")
+
 import needle as ndl
 from needle import backend_ndarray as nd
 
@@ -306,6 +309,7 @@ getitem_params = [
     {"shape": (8, 16), "fn": lambda X: X[1:2, 1:3]},
     {"shape": (8, 16), "fn": lambda X: X[3:4, 1:4]},
     {"shape": (8, 16), "fn": lambda X: X[1:4, 3:4]},
+    {"shape": (8, 16), "fn": lambda X: X[1:4:2, 3:4:2]},
 ]
 
 
@@ -325,6 +329,7 @@ def test_getitem(device, params):
 
 broadcast_params = [
     {"from_shape": (1, 3, 4), "to_shape": (6, 3, 4)},
+    {"from_shape": (1, 3, 1), "to_shape": (6, 3, 4)},
 ]
 
 
