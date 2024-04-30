@@ -382,6 +382,12 @@ void ScalarGe(const CudaArray& a, scalar_t val, CudaArray* out) {
   ScalerKernel<<<dim.grid, dim.block>>>(a.ptr, val, out->ptr, out->size, Ge);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Elementwise and scalar operations
+////////////////////////////////////////////////////////////////////////////////
+
+// __global__ void MatmulKernel()
+
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N,
             uint32_t P) {
   /**
@@ -405,15 +411,12 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    *   N: columns of a / rows of b
    *   P: columns of b / out
    */
-
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  // TODO
+  return;
   /// END SOLUTION
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Elementwise and scalar operations
-////////////////////////////////////////////////////////////////////////////////
 
 
 ////////////////////////////////////////////////////////////////////////////////
