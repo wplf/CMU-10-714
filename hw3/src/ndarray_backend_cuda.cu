@@ -248,6 +248,7 @@ void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<int32_
 #define Tanh 7
 #define Pow 8
 #define Add 9
+#define Sum 10
 
 __global__ void EwiseKernel(const scalar_t* a, const scalar_t* b, 
                             scalar_t* out, size_t size, int mode) {
@@ -420,6 +421,20 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
 ////////////////////////////////////////////////////////////////////////////////
 
 
+__global__ void ReduceKernel(const scalar_t* a, scalar_t* out, size_t size, size_t reduce_size, int mode){
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size){
+    int pos = gid * reduce_size;
+    out[gid] = a[pos];
+    for(int i = 1; i < reduce_size; i++){
+      switch(mode){
+        case Sum: out[gid] += a[pos + i]; break;
+        case Max: out[gid] = out[gid] > a[pos + i] ? out[gid] : a[pos + i]; break;
+      }
+    }
+  }
+}
+
 void ReduceMax(const CudaArray& a, CudaArray* out, size_t reduce_size) {
   /**
    * Reduce by taking maximum over `reduce_size` contiguous blocks.  Even though it is inefficient,
@@ -431,9 +446,9 @@ void ReduceMax(const CudaArray& a, CudaArray* out, size_t reduce_size) {
    *   redice_size: size of the dimension to reduce over
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
-  /// END SOLUTION
-}
+  CudaDims dim = CudaOneDim(out->size);
+  ReduceKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, out->size, reduce_size, Max);
+}  /// END SOLUTION
 
 
 
@@ -448,7 +463,8 @@ void ReduceSum(const CudaArray& a, CudaArray* out, size_t reduce_size) {
    *   redice_size: size of the dimension to reduce over
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  CudaDims dim = CudaOneDim(out->size);
+  ReduceKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, out->size, reduce_size, Sum);
   /// END SOLUTION
 }
 
