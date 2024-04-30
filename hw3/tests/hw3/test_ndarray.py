@@ -205,7 +205,13 @@ def test_setitem_scalar(params, device):
     compare_strides(_A, A)
 
 
-matmul_tiled_shapes = [(1, 1, 1), (2, 2, 3), (1, 2, 1), (3, 3, 3)]
+matmul_tiled_shapes = [
+    (1, 1, 1), 
+    (2, 2, 3), 
+    (1, 2, 1), 
+    (3, 3, 3),
+    (20,20,20)
+    ]
 
 
 @pytest.mark.parametrize("m,n,p", matmul_tiled_shapes)
