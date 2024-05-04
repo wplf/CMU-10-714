@@ -1,4 +1,4 @@
-# dl-sys
+# CMU-Deep-Learning-Systems
 
 By the end of this course, you will
 
