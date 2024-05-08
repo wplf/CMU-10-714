@@ -385,8 +385,23 @@ void ScalarGe(const CudaArray& a, scalar_t val, CudaArray* out) {
 ////////////////////////////////////////////////////////////////////////////////
 // Elementwise and scalar operations
 ////////////////////////////////////////////////////////////////////////////////
+// (const scalar_t* a, float val, 
+//                             scalar_t* out, size_t size, int mode) {
 
-// __global__ void MatmulKernel()
+__global__ void MatmulKernel_naive(const scalar_t* a, const scalar_t * b, scalar_t* out, 
+            uint32_t M, uint32_t N, uint32_t P){
+  // each kernel thread computes one element of the output matrix.
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int j = blockIdx.y * blockDim.y + threadIdx.y;
+  
+  if( i < M && j < P){
+    out[i * P + j] = 0;
+    for(int k = 0; k < N; k++){
+      out[i * P + j] += a[i * N + k] * b[k * P + j];
+    }
+  }
+}
+
 
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N,
             uint32_t P) {
@@ -401,7 +416,7 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    * matrices, whether or not they are a multiple of a tile size.  As with previous CUDA
    * implementations, this function here will largely just set up the kernel call, and you should
    * implement the logic in a separate MatmulKernel() call.
-   * 
+   *        
    *
    * Args:
    *   a: compact 2D array of size m x n
@@ -413,7 +428,13 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    */
   /// BEGIN SOLUTION
   // TODO
-  return;
+  // dim3 grid(BASE_THREAD_NUM, BASE_THREAD_NUM, 1);
+  // dim3 block((M + BASE_THREAD_NUM - 1) / BASE_THREAD_NUM, (P + BASE_THREAD_NUM - 1) / BASE_THREAD_NUM, 1);
+  int block_size = 32;
+  dim3 block(block_size, block_size);
+  dim3 grid((M + block_size - 1) / block_size, (P + block_size - 1) / block_size);
+  // MatmulKernel<<<grid, block>>>(a.ptr, b.ptr, out->ptr, M, N, P);
+  MatmulKernel_naive<<<grid, block>>>(a.ptr, b.ptr, out->ptr, M, N, P);
   /// END SOLUTION
 }
 
