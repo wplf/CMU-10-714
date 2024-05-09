@@ -364,7 +364,6 @@ class Tensor(Value):
     __rsub__ = __sub__
     __rmatmul__ = __matmul__
 
-
 def compute_gradient_of_variables(output_tensor, out_grad):
     """Take gradient of output node with respect to each node in node_list.
 
@@ -379,9 +378,20 @@ def compute_gradient_of_variables(output_tensor, out_grad):
 
     # Traverse graph in reverse topological order given the output_node that we are taking gradient wrt.
     reverse_topo_order = list(reversed(find_topo_sort([output_tensor])))
+    # breakpoint()
 
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    for node in reverse_topo_order:
+        adjoint = node_to_output_grads_list[node]
+        v_i = sum_node_list(adjoint)
+        node.grad = v_i
+        if node.op is None:
+            continue
+        all_grads = node.op.gradient(v_i, node) 
+        for inp, g_ in zip(node.inputs, all_grads):
+            if node_to_output_grads_list.get(inp) is None:
+                node_to_output_grads_list[inp] = []
+            node_to_output_grads_list[inp].append(g_)
     ### END YOUR SOLUTION
 
 
@@ -394,21 +404,26 @@ def find_topo_sort(node_list: List[Value]) -> List[Value]:
     sort.
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    visited = set()
+    topo_order = []
+    for node in node_list:
+        if node not in visited:
+            topo_sort_dfs(node, visited, topo_order)    
+    return topo_order
+    # raise NotImplementedError()
     ### END YOUR SOLUTION
 
 
 def topo_sort_dfs(node, visited, topo_order):
     """Post-order DFS"""
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    visited.add(node)
+    for child in node.inputs:
+        if child not in visited:
+            topo_sort_dfs(child, visited, topo_order)
+    topo_order.append(node)
+    # raise NotImplementedError()
     ### END YOUR SOLUTION
-
-
-##############################
-####### Helper Methods #######
-##############################
-
 
 def sum_node_list(node_list):
     """Custom sum function in order to avoid create redundant nodes in Python sum implementation."""

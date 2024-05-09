@@ -98,7 +98,7 @@ class PowerScalar(TensorOp):
 
     def compute(self, a: NDArray) -> NDArray:
         ### BEGIN YOUR SOLUTION
-        return array_api.power(a, self.scalar)
+        return a ** self.scalar
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
@@ -164,14 +164,14 @@ class Transpose(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        transpose_axis = array_api.arange(len(a.shape))
+        transpose_axis = [x for x in range(len(a.shape))]
         if self.axes is None:
             transpose_axis[-2], transpose_axis[-1] = \
                 transpose_axis[-1], transpose_axis[-2]
         else:
             transpose_axis[self.axes[0]], transpose_axis[self.axes[1]] = \
                 self.axes[1], self.axes[0]
-        return array_api.transpose(a, transpose_axis)
+        return a.permute(transpose_axis)
         # raise NotImplementedError()
         ### END YOUR SOLUTION
 
@@ -252,7 +252,9 @@ class Summation(TensorOp):
         ### BEGIN YOUR SOLUTION
         in_shape = node.inputs[0].shape
         if self.axes is not None:
-            out_grad = array_api.expand_dims(out_grad.cached_data, self.axes)
+            new_shape = list(out_grad.shape)
+            new_shape.insert(self.axes, 1)
+            out_grad = out_grad.reshape(tuple(new_shape))
         grad = broadcast_to(Tensor(out_grad), in_shape)
         return (Tensor(grad) ,)
         ### END YOUR SOLUTION
@@ -265,7 +267,7 @@ def summation(a, axes=None):
 class MatMul(TensorOp):
     def compute(self, a, b):
         ### BEGIN YOUR SOLUTION
-        return array_api.matmul(a, b)
+        return a @ b
         # raise NotImplementedError()
         ### END YOUR SOLUTION
 
@@ -394,11 +396,11 @@ class Stack(TensorOp):
         new_shape = list(args[0].shape)
         n = len(args)
         new_shape.insert(self.axis, n)
-        ans = array_api.empty(tuple(new_shape))
-        slices = [slice(0, s) for s in args[0].shape]
+        ans = array_api.empty(tuple(new_shape), device=args[0].device)
+        slices = [slice(0, s, 1) for s in new_shape]
         for i in range(n):
             slices[self.axis] = slice(i, i+1)
-            ans[slices] = args[i]
+            ans[tuple(slices)] = args[i]
         return ans
         ### END YOUR SOLUTION
 
@@ -406,11 +408,12 @@ class Stack(TensorOp):
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
         ans = []
-        slices = [slice(0, s) for i, s in enumerate(out_grad.shape)]
+        slices = [slice(0, s, 1) for i, s in enumerate(out_grad.shape)]
+        new_shape = [x for i, x in enumerate(out_grad.shape) if i != self.axis ]
         for i in range(out_grad.shape[self.axis]):
-            slices[i] = slice(i, i+1)
-            ans.append(out_grad[slices])
-        return tuple(ans) 
+            slices[i] = slice(i, i+1, 1)
+            ans.append(out_grad.cached_data[tuple(slices).compact().reshape(new_shape)])
+        return tuple(*ans )
         # pass
         # raise NotImplementedError()
         ### END YOUR SOLUTION
