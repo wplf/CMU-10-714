@@ -318,7 +318,17 @@ class NDArray:
                 new_strides.append(self.strides[i])
         new_strides = tuple(new_strides)
         return NDArray.make(new_shape, strides=new_strides, 
-                            device=self.device, handle=self._handle)        ### END YOUR SOLUTION
+                            device=self.device, handle=self._handle)  
+        # assert(len(self._shape) == len(new_shape))
+        # for x, y in zip(self._shape, new_shape):
+        #     assert(x == y or x == 1)
+        
+        # new_strides = list(self._strides)
+        # for i in range(len(self._shape)):
+        #     if self._shape[i] != new_shape[i]:
+        #         new_strides[i] = 0
+        # return NDArray.make(new_shape, tuple(new_strides), self._device, self._handle)      
+        ### END YOUR SOLUTION
 
     ### Get and set elements
 

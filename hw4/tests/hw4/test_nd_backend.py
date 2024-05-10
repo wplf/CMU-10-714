@@ -238,6 +238,21 @@ def test_logsumexp(shape, axes, device):
         t_axes = axes
     np.testing.assert_allclose(torch.logsumexp(A_t, dim=t_axes).numpy(), ndl.logsumexp(A, axes=axes).numpy(), atol=1e-5, rtol=1e-5)
 
+def get_tensor(*shape, entropy=1):
+    np.random.seed(np.prod(shape) * len(shape) * entropy)
+    return ndl.Tensor(np.random.randint(0, 100, size=shape) / 20, dtype="float32")
+
+def logsumexp_forward(shape, axes):
+    x = get_tensor(*shape)
+    return (ndl.ops.logsumexp(x, axes=axes)).cached_data
+
+
+def logsumexp_backward(shape, axes):
+    x = get_tensor(*shape)
+    y = (ndl.ops.logsumexp(x, axes=axes) ** 2).sum()
+    y.backward()
+    return x.grad.cached_data
+
 
 
 ### MUGRADE ###

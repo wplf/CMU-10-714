@@ -387,7 +387,7 @@ def compute_gradient_of_variables(output_tensor, out_grad):
         node.grad = v_i
         if node.op is None:
             continue
-        all_grads = node.op.gradient(v_i, node) 
+        all_grads = node.op.gradient_as_tuple(v_i, node) 
         for inp, g_ in zip(node.inputs, all_grads):
             if node_to_output_grads_list.get(inp) is None:
                 node_to_output_grads_list[inp] = []
