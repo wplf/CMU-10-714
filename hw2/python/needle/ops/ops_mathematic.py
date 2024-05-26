@@ -201,7 +201,7 @@ class Reshape(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        return array_api.reshape(a, self.shape)
+        return array_api.reshape(a.compact(), self.shape)
         # raise NotImplementedError()
         ### END YOUR SOLUTION
 

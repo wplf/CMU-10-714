@@ -25,13 +25,10 @@ class SGD(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        
         for param in self.params:
             grad = param.grad.detach() + self.weight_decay * param.detach()
-            
             self.u[param] = self.u.get(param, 0) * self.momentum \
                     + grad * (1 - self.momentum)
-                    
             param.cached_data -= self.lr * self.u[param].cached_data
 
         # breakpoint()
@@ -43,7 +40,13 @@ class SGD(Optimizer):
         Clips gradient norm of parameters.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        for param in self.params:
+            param.grad = param.grad.detach().maximum(0.25)
+            param.grad = param.grad.detach() * -1
+            param.grad = param.grad.detach().maximum(0.25)
+            param.grad = param.grad.detach() * -1
+
+        # raise NotImplementedError()
         ### END YOUR SOLUTION
 
 

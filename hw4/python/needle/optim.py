@@ -25,7 +25,14 @@ class SGD(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        
+        for param in self.params:
+            grad = param.grad.detach() + self.weight_decay * param.detach()
+            
+            self.u[param] = self.u.get(param, 0) * self.momentum \
+                    + grad * (1 - self.momentum)
+                    
+            param.cached_data -= self.lr * self.u[param].cached_data
         ### END YOUR SOLUTION
 
     def clip_grad_norm(self, max_norm=0.25):
@@ -33,7 +40,11 @@ class SGD(Optimizer):
         Clips gradient norm of parameters.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        for param in self.params:
+            param.grad = param.grad.detach().maximum(0.25)
+            param.grad = param.grad.detach() * -1
+            param.grad = param.grad.detach().maximum(0.25)
+            param.grad = param.grad.detach() * -1
         ### END YOUR SOLUTION
 
 
@@ -60,5 +71,15 @@ class Adam(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.t += 1
+        for param in self.params:
+            grad = param.grad.detach() + self.weight_decay * param.detach()
+            
+            self.m[param] = self.beta1 * self.m.get(param, 0) + (1 - self.beta1) * grad
+            self.v[param] = self.beta2 * self.v.get(param, 0) + (1 - self.beta2) * (grad ** 2)
+            # breakpoint()
+            m_t1_hat = self.m[param] / (1 - self.beta1 ** (self.t))
+            v_t1_hat = self.v[param] / (1 - self.beta2 ** (self.t))
+            
+            param.cached_data -= (self.lr * m_t1_hat / ((v_t1_hat ** 0.5) + self.eps)).cached_data
         ### END YOUR SOLUTION

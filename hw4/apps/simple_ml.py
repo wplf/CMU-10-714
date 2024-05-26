@@ -14,7 +14,7 @@ from apps.models import *
 import time
 device = ndl.cpu()
 
-def parse_mnist(image_filesname, label_filename):
+def parse_mnist(image_filename, label_filename):
     """Read an images and labels file in MNIST format.  See this page:
     http://yann.lecun.com/exdb/mnist/ for a description of the file format.
 
@@ -37,8 +37,18 @@ def parse_mnist(image_filesname, label_filename):
                 for MNIST will contain the values 0-9.
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    with gzip.open(image_filename, 'rb') as f:
+        image_bytes = f.read()
+        magic_number, num_images, rows, cols = struct.unpack(">iiii", image_bytes[:16])
+        pixels = struct.unpack("%dB" % (num_images * rows * cols), image_bytes[16:])
+        pixels = np.array(pixels, dtype=np.float32).reshape(num_images,  rows * cols) / 255
+    
+    with gzip.open(label_filename, 'rb') as f:
+        label_bytes = f.read()
+        magic_number, num_labels = struct.unpack(">ii", label_bytes[:8])
+        labels = struct.unpack("%dB" % num_labels, label_bytes[8:])
+        labels = np.array(labels, dtype=np.uint8)
+    return pixels, labels    ### END YOUR SOLUTION    ### END YOUR SOLUTION
 
 
 def softmax_loss(Z, y_one_hot):
@@ -58,7 +68,9 @@ def softmax_loss(Z, y_one_hot):
         Average softmax loss over the sample. (ndl.Tensor[np.float32])
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    n = Z.shape[0]
+    loss = ndl.logsumexp(Z, 1).sum() - (Z-y_one_hot).sum()
+    return loss / n
     ### END YOUR SOLUTION
 
 
@@ -87,8 +99,23 @@ def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
     """
 
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    for i in range(0, len(X), batch):
+        start, end = i, min(i+batch, len(X))
+        X_batch = ndl.Tensor(X[start:end])
+        y_batch = ndl.Tensor(y[start:end])
+        y_one_hot = np.eye(W2.shape[1])[y_batch.cached_data]
+        
+        z1 = ndl.relu(ndl.matmul(X_batch, W1))
+        z2 = ndl.matmul(z1, W2)
+        loss = softmax_loss(z2, y_one_hot)
+        loss.backward()
+        
+        W1 = W1.numpy() - lr * W1.grad.numpy()
+        W2 = W2.numpy() - lr * W2.grad.numpy()
+        W1, W2 = ndl.Tensor(W1), ndl.Tensor(W2)
+        print(f"current position {i} loss {loss}")
+
+    return W1, W2    ### END YOUR SOLUTION
 
 ### CIFAR-10 training ###
 def epoch_general_cifar10(dataloader, model, loss_fn=nn.SoftmaxLoss(), opt=None):
@@ -110,7 +137,38 @@ def epoch_general_cifar10(dataloader, model, loss_fn=nn.SoftmaxLoss(), opt=None)
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    correct, cnt = 0, 0
+    total_loss = 0
+    device= model.device
+    if opt:
+        model.train()
+        from tqdm import tqdm
+        pbar = tqdm(dataloader, desc='Batch:', unit='step', total=111)
+        for idx, (X, y) in enumerate(pbar):
+            # X = X.to(model.device)
+            # y = y.to(model.device)
+            X, y = ndl.Tensor(X, device=device), ndl.Tensor(y, device=device)
+            opt.reset_grad()
+            out = model(X)
+            loss = loss_fn(out, y)
+            loss.backward()
+            total_loss += loss.detach().numpy()
+            opt.step()   
+            correct += (out.numpy().argmax(1) == y.numpy()).sum()  
+            cnt += y.shape[0]
+            pbar.set_postfix(Parameter=f"acc {(correct/cnt).item():.4f}, loss {(total_loss/cnt).item():.4f}")
+            pbar.update()
+    else:
+        model.eval()
+        for idx, (X, y) in enumerate(dataloader):
+            X, y = ndl.Tensor(X, device=device), ndl.Tensor(y, device=device)
+            out = model(X)
+            loss = loss_fn(out, y)
+            total_loss += loss.detach().numpy()
+            correct += (out.numpy().argmax(1) == y.numpy()).sum()  
+            cnt += y.shape[0]
+
+    return correct / cnt, total_loss / cnt        
     ### END YOUR SOLUTION
 
 
@@ -134,7 +192,13 @@ def train_cifar10(model, dataloader, n_epochs=1, optimizer=ndl.optim.Adam,
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    opt = optimizer(model.parameters(), lr=lr, weight_decay=weight_decay)
+    for epoch in range(1, 1 + n_epochs):
+        acc, loss = epoch_general_cifar10(dataloader=dataloader,
+                              model=model,
+                              loss_fn=loss_fn(),
+                              opt=opt)
+    return acc, loss
     ### END YOUR SOLUTION
 
 
@@ -153,7 +217,11 @@ def evaluate_cifar10(model, dataloader, loss_fn=nn.SoftmaxLoss):
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    acc, loss = epoch_general_cifar10(dataloader=dataloader,
+                            model=model,
+                            loss_fn=loss_fn())
+    return acc, loss
+    # raise NotImplementedError()
     ### END YOUR SOLUTION
 
 
@@ -180,7 +248,35 @@ def epoch_general_ptb(data, model, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=Non
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    correct, cnt = 0, 0
+    total_loss = 0
+    device= model.device
+    nbatch, batch_size = data.shape
+    if opt:
+        model.train()
+    else:
+        model.eval()
+        
+    from tqdm import tqdm
+    pbar = tqdm(data, desc='Batch:', unit='step', total=500)
+    for i in range(0, nbatch - 1, seq_len):
+        X, y = ndl.data.get_batch(data, i, seq_len, device=device, dtype=dtype)
+        out, h = model(X)
+        # breakpoint()
+        loss = loss_fn(out, y)
+        
+        if opt:
+            opt.reset_grad()
+            loss.backward()
+            opt.step()   
+            
+        total_loss += loss.detach().numpy()
+        correct += (out.numpy().argmax(1) == y.numpy()).sum()  
+        cnt += y.shape[0]
+        pbar.set_postfix(Parameter=f"acc {(correct/cnt).item():.4f}, loss {(total_loss/cnt).item():.4f}")
+        pbar.update()
+    
+    return correct / cnt, total_loss / cnt   
     ### END YOUR SOLUTION
 
 
@@ -207,7 +303,13 @@ def train_ptb(model, data, seq_len=40, n_epochs=1, optimizer=ndl.optim.SGD,
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    opt = optimizer(model.parameters(), lr=lr, weight_decay=weight_decay)
+    for epoch in range(1, 1 + n_epochs):
+        acc, loss = epoch_general_ptb(data=data,
+                              model=model,
+                              loss_fn=loss_fn(),
+                              opt=opt, clip=None, device=device, dtype=dtype)
+    return acc, loss
     ### END YOUR SOLUTION
 
 def evaluate_ptb(model, data, seq_len=40, loss_fn=nn.SoftmaxLoss,
@@ -227,7 +329,12 @@ def evaluate_ptb(model, data, seq_len=40, loss_fn=nn.SoftmaxLoss,
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    acc, loss = epoch_general_ptb(data=data,
+                            model=model,
+                            seq_len=seq_len,
+                            loss_fn=loss_fn(),
+                            opt=None, clip=None, device=device, dtype=dtype)
+    return acc, loss
     ### END YOUR SOLUTION
 
 ### CODE BELOW IS FOR ILLUSTRATION, YOU DO NOT NEED TO EDIT
